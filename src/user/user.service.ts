@@ -23,8 +23,6 @@ export class UserService {
       throw new ConflictException('User already exists');
     }
     const result = await this.userRepository.save(createUserDto);
-    await this.redis.set(`${result.id}`, JSON.stringify(result));
-
     return result;
   }
 
@@ -39,25 +37,9 @@ export class UserService {
   }
 
   async findAll(): Promise<User[]> {
-    const redusData = await this.redis.keys('*');
-    if (redusData.length > 0) {
-      const users = await this.redis.mget(redusData);
-      console.log('cache hit');
-      return users.map((user) => JSON.parse(user));
-    } else {
-      const users = await this.userRepository.find();
-      users.forEach(async (user) => {
-        await this.redis.set(`${user.id}`, JSON.stringify(user));
-      });
-      const users = await this.userRepository.find();
-      console.log('cache missingiss');
-      return users;
-    }
-
     const users = await this.userRepository.find({
       relations: ['orders'],
     });
-    console.log('cache miss');
     return users;
   }
 
